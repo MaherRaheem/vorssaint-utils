@@ -8,6 +8,7 @@ struct NotchView: View {
     @ObservedObject var service: NotchService
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var music = NotchMusicService.shared
+    @ObservedObject private var calendar = NotchCalendarService.shared
     @ObservedObject private var launcher = QuickLauncherService.shared
     @ObservedObject private var updates = UpdateService.shared
     @AppStorage(DefaultsKey.notchLiquidGlassEnabled) private var glass = false
@@ -802,6 +803,26 @@ struct NotchRestingStrip: View {
 
     private var batterySymbol: String { NotchRestingBattery.symbol(for: service.power) }
 
+    private func calendarRestingContent(now: Date) -> some View {
+        let event = NotchCalendarSupport.tileEvent(calendar.events, now: now)
+        return Group {
+            if let event {
+                let progress = NotchSupport.calendarRestingProgress(event: event, now: now)
+                ZStack {
+                    Circle().stroke(.white.opacity(0.22), lineWidth: 2)
+                    Circle().trim(from: 0, to: progress).stroke(Color.accentColor,
+                        style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                }
+                .frame(width: 16, height: 16)
+                .help(NotchCalendarStrip.displayTitle(event,
+                      untitled: FeatureStrings.notchCalendar(L10n.shared.language).untitled))
+            } else {
+                Image(systemName: "calendar").font(.system(size: 12))
+            }
+        }
+    }
+
     /// Centre battery content inside the wing's visible area, past its curved shoulder.
     private var restingBatteryInset: CGFloat {
         // Leave enough of the 44-point wing for the full 100% label at every height.
@@ -838,6 +859,9 @@ struct NotchRestingStrip: View {
                         case .agents:
                             NotchAgentRestingWing(leading: true)
                                 .padding(.leading, restingBatteryInset)
+                        case .calendar:
+                            calendarRestingContent(now: Date())
+                                .padding(.leading, restingBatteryInset)
                         case .none: EmptyView()
                         }
                     }
@@ -863,6 +887,15 @@ struct NotchRestingStrip: View {
                         case .agents:
                             NotchAgentRestingWing(leading: false)
                                 .padding(.trailing, restingBatteryInset)
+                        case .calendar:
+                            if let event = NotchCalendarSupport.tileEvent(calendar.events, now: Date()) {
+                                Text(NotchCalendarSupport.tileStartText(event.start, now: Date(),
+                                     locale: L10n.shared.language.formattingLocale()))
+                                    .font(.system(size: 9, weight: .medium)).monospacedDigit()
+                                    .foregroundStyle(.white.opacity(0.9))
+                                    .lineLimit(1)
+                                    .padding(.trailing, restingBatteryInset)
+                            }
                         case .none: EmptyView()
                         }
                     }

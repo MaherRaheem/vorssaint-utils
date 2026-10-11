@@ -62,6 +62,8 @@ final class NotchCalendarService: NSObject, ObservableObject {
     private var reader: NotchCalendarReader?
     private var task: Task<Void, Never>?
     private var refreshTimer: Timer?
+    private var restingSoundTimer: Timer?
+    private var restingSoundEventID: String?
     private var observers: [NSObjectProtocol] = []
     private var permissionSubscription: AnyCancellable?
     private var generation = UUID()
@@ -69,6 +71,7 @@ final class NotchCalendarService: NSObject, ObservableObject {
     private var countdownEnabled = false
     private var timeLeftEnabled = false
     private var excludedCalendars = Set<String>()
+    private lazy var restingTone = NSSound(contentsOfFile: "/System/Library/Sounds/Glass.aiff", byReference: false)
 
     private override init() { super.init() }
 
@@ -176,6 +179,7 @@ final class NotchCalendarService: NSObject, ObservableObject {
                                                             ends: self.timeLeftEnabled, chosen: self.chosenCountdowns)
             self.loading = false
             self.task = nil
+            self.scheduleRestingSound(now: now)
             let agendaRefresh = NotchCalendarSupport.nextRefresh(self.events, now: now)
             let countdownRefresh = NotchCalendarSupport.countdownTransition(
                 currentEvents, now: now, starts: self.countdownEnabled, ends: self.timeLeftEnabled,
@@ -191,6 +195,30 @@ final class NotchCalendarService: NSObject, ObservableObject {
     }
 
     @objc private func timedRefresh() { refresh() }
+
+    private func scheduleRestingSound(now: Date) {
+        restingSoundTimer?.invalidate()
+        restingSoundTimer = nil
+        guard NotchSupport.idleContent() == .calendar,
+              let event = NotchCalendarSupport.tileEvent(events, now: now), event.start > now else {
+            restingSoundEventID = nil
+            return
+        }
+        guard restingSoundEventID != event.id else { return }
+        restingSoundEventID = event.id
+        let timer = Timer(fireAt: event.start, interval: 0, target: self,
+                          selector: #selector(restingEventStarted), userInfo: nil, repeats: false)
+        timer.tolerance = 1
+        RunLoop.main.add(timer, forMode: .common)
+        restingSoundTimer = timer
+    }
+
+    @objc private func restingEventStarted() {
+        restingSoundTimer = nil
+        guard NotchSupport.idleContent() == .calendar else { return }
+        if let restingTone { restingTone.stop(); restingTone.play() } else { NSSound.beep() }
+        refresh()
+    }
 
     /// A chosen event read again keeps its current end, and one that has
     /// ended is forgotten. Only the week holding every countdown the island
@@ -208,6 +236,8 @@ final class NotchCalendarService: NSObject, ObservableObject {
         generation = UUID()
         task?.cancel(); task = nil
         refreshTimer?.invalidate(); refreshTimer = nil
+        restingSoundTimer?.invalidate(); restingSoundTimer = nil
+        restingSoundEventID = nil
         observers.forEach(NotificationCenter.default.removeObserver)
         observers.removeAll()
         permissionSubscription = nil

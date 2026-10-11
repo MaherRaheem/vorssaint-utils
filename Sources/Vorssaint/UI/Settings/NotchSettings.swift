@@ -524,6 +524,10 @@ struct NotchSettings: View {
                         idleChoice(.agents, title: FeatureStrings.notchAgents(l10n.language).restingTitle, symbol: "sparkles",
                                    reason: pageReason(.agents, feature: .notchAgents), fix: pageAction(.agents, feature: .notchAgents))
                     }
+                    if NotchSupport.canRest(with: .calendar) || idle == NotchIdleContent.calendar.rawValue {
+                        idleChoice(.calendar, title: FeatureStrings.notchCalendar(l10n.language).title, symbol: "calendar",
+                                   reason: pageReason(.calendar, feature: .notchCalendar), fix: pageAction(.calendar, feature: .notchCalendar))
+                    }
                 }
                 if restingChoice == .battery { lowBatteryControls }
                 switchRow("menubar.rectangle", text.coverMenus, caption: text.coverMenusHint, isOn: $coversMenus)

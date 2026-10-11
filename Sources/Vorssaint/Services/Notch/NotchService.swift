@@ -416,6 +416,9 @@ final class NotchService: ObservableObject {
     /// choice rests empty there; playing music still shows as before.
     var idleContent: NotchIdleContent {
         let content = NotchSupport.visibleIdleContent(isPlaying: !awaitsTrackNotice && NotchMusicService.shared.playback?.isPlaying == true)
+        if content == .calendar && NotchCalendarSupport.tileEvent(NotchCalendarService.shared.events, now: Date()) == nil {
+            return .none
+        }
         return content == .battery && !PowerSampler.hasInternalBattery ? .none : content
     }
 

@@ -21,7 +21,21 @@ enum NotchActivityTests {
         accessoryContracts(suite)
         PeripheralBatteryLifecycleTests.run(suite)
         gateContracts(suite)
+              calendarRestingContracts(suite)
     }
+
+       private static func calendarRestingContracts(_ suite: TestSuite) {
+              let start = Date(timeIntervalSinceReferenceDate: 900_000_000)
+              let event = NotchCalendarEvent(id: "rest", title: "Next", calendar: "Personal",
+                                                                  start: start.addingTimeInterval(1800), end: start.addingTimeInterval(3600),
+                                                                  allDay: false, location: "")
+              suite.expect(NotchSupport.calendarRestingProgress(event: event,
+                          now: event.start.addingTimeInterval(-NotchCalendarSupport.countdownLeadTime)) == 0
+                                    && NotchSupport.calendarRestingProgress(event: event, now: start.addingTimeInterval(1800)) == 1,
+                                    "the resting calendar ring fills through the hour before an event")
+              suite.expect(NotchSupport.calendarRestingProgress(event: event, now: start.addingTimeInterval(2700)) == 1,
+                                    "the resting calendar ring stays full after the event starts")
+       }
 
     /// Keep Awake as an activity: off until turned on, gated like the others,
     /// last in the automatic order, and read in whole minutes like a timer.

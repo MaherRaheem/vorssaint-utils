@@ -518,7 +518,7 @@ struct NotchControlsLayout: Equatable {
 }
 
 enum NotchIdleContent: String, CaseIterable {
-    case none, battery, music, agents
+    case none, battery, music, agents, calendar
 }
 
 /// How urgently the charge is shown: amber for the early warning, red when low.
@@ -1697,12 +1697,19 @@ enum NotchSupport {
         case .battery: return AppFeature.monitorPower.isAvailable(in: defaults)
         case .music: return modules(in: defaults).contains(.music)
         case .agents: return NotchAgentSupport.sectionShows(in: defaults)
+        case .calendar: return NotchCalendarSupport.isEnabled(in: defaults)
         }
     }
 
     static func visibleIdleContent(isPlaying: Bool, in defaults: UserDefaults = .standard) -> NotchIdleContent {
         let choice = idleContent(in: defaults)
         return choice == .music && !showsMusicActivity(isPlaying: isPlaying, in: defaults) ? .none : choice
+    }
+
+    static func calendarRestingProgress(event: NotchCalendarEvent, now: Date) -> Double {
+        let start = event.start.addingTimeInterval(-NotchCalendarSupport.countdownLeadTime)
+        guard event.start > now else { return 1 }
+        return min(1, max(0, now.timeIntervalSince(start) / NotchCalendarSupport.countdownLeadTime))
     }
 
     static func controls(in defaults: UserDefaults = .standard) -> [NotchControlItem] {

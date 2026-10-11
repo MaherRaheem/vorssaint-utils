@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.4.2] - 2026-10-11
+
+### Summary
+Dynamic Island can now rest on the next calendar event with a progress circle, event time and a sound when the event begins.
+
+### Added
+- Calendar can be selected as the Dynamic Island's resting Activity. The island shows the next event's time and a small progress circle during the hour before it starts, then plays a sound when it begins.
+
 ## [Unreleased]
 
 ### Summary
